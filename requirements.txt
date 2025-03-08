@@ -1,4 +1,6 @@
-langgraph==0.0.15
-cohere==4.39
-python-dotenv==1.0.0
-rich==13.7.0 
+cohere
+langgraph
+python-dotenv
+rich
+requests
+Pillow 
