@@ -1,0 +1,51 @@
+ai_research_assistant/
+├── backend/
+│   ├── manage.py
+│   ├── requirements.txt
+│   ├── .env
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   ├── asgi.py
+│   │   └── wsgi.py
+│   ├── apps/
+│   │   ├── __init__.py
+│   │   ├── chat/
+│   │   │   ├── __init__.py
+│   │   │   ├── apps.py
+│   │   │   ├── models.py
+│   │   │   ├── serializers.py
+│   │   │   ├── urls.py
+│   │   │   ├── views.py
+│   │   │   └── services/
+│   │   │       ├── __init__.py
+│   │   │       └── agent_service.py
+│   │   └── users/
+│   │       ├── __init__.py
+│   │       ├── apps.py
+│   │       ├── models.py
+│   │       ├── serializers.py
+│   │       ├── urls.py
+│   │       └── views.py
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── index.html
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   ├── components/
+│   │   │   ├── Chat/
+│   │   │   │   ├── ChatWindow.jsx
+│   │   │   │   ├── MessageList.jsx
+│   │   │   │   ├── MessageInput.jsx
+│   │   │   │   └── Message.jsx
+│   │   │   └── common/
+│   │   │       ├── Header.jsx
+│   │   │       └── Loading.jsx
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   └── styles/
+│   │       └── main.css
+└── README.md 

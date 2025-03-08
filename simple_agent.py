@@ -5,6 +5,13 @@ from dotenv import load_dotenv
 import os
 import time
 import sys
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.live import Live
+from rich.spinner import Spinner
+
+# Initialize Rich console for better formatting
+console = Console()
 
 # Load environment variables
 load_dotenv()
@@ -30,31 +37,25 @@ def create_researcher_agent():
         # Get the last message
         last_message = state["messages"][-1]["content"]
         
-        print("\nThinking", end="")
-        sys.stdout.flush()
+        # Use console.status() for the spinner
+        with console.status("[bold green]Thinking...", spinner="dots") as status:
+            try:
+                # Generate response using Cohere
+                response = co.generate(
+                    prompt=f"As a helpful AI assistant, please respond to: {last_message}",
+                    max_tokens=300,
+                    temperature=0.7,
+                )
+                
+                # Add the response to messages
+                state["messages"].append({
+                    "role": "assistant",
+                    "content": response.generations[0].text.strip()
+                })
+                
+            except Exception as e:
+                console.print(f"\n[red]Error generating response: {e}[/red]")
         
-        try:
-            # Generate response using Cohere
-            response = co.generate(
-                prompt=f"As a helpful AI assistant, please respond to: {last_message}",
-                max_tokens=300,
-                temperature=0.7,
-            )
-            
-            # Clear the thinking animation
-            print("\r" + " " * 20 + "\r", end="")
-            print("Generating response...\n")
-            
-            # Add the response to messages
-            state["messages"].append({
-                "role": "assistant",
-                "content": response.generations[0].text.strip()
-            })
-            
-        except Exception as e:
-            print("\r" + " " * 20 + "\r", end="")
-            print(f"Error generating response: {e}")
-            
         return state
 
     return research
@@ -76,40 +77,39 @@ def create_workflow():
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def animate_loading():
-    chars = "/—\\|"
-    for char in chars:
-        sys.stdout.write('\r' + 'Processing ' + char)
-        sys.stdout.flush()
-        time.sleep(0.1)
-
-def print_chat_history(messages, animate_last=False):
+def print_chat_history(messages):
     clear_screen()
-    print("\n=== Chat History ===")
-    print("-------------------")
+    console.print("\n[bold blue]=== Chat History ===[/bold blue]")
+    console.print("[blue]-------------------[/blue]")
     
-    # Print all messages except the last one if animating
-    messages_to_print = messages[:-1] if animate_last else messages
+    # Print all previous messages normally
+    if len(messages) > 2:
+        for message in messages[:-2]:  # All messages except the last exchange
+            role = "[bold cyan]You[/bold cyan]" if message["role"] == "user" else "[bold green]Assistant[/bold green]"
+            console.print(f"\n{role}:")
+            console.print(message["content"])
     
-    # Print previous messages normally
-    for message in messages_to_print:
-        role = "You" if message["role"] == "user" else "Assistant"
-        print(f"\n{role}:")
-        print(message["content"])
+    # Print the latest exchange with animation for assistant's response
+    if messages:
+        # Get the last exchange
+        latest_messages = messages[-2:] if len(messages) >= 2 else messages
+        
+        for message in latest_messages:
+            if message["role"] == "user":
+                console.print(f"\n[bold cyan]You:[/bold cyan]")
+                console.print(f"{message['content']}")
+            else:
+                console.print("\n[bold green]Assistant:[/bold green]")
+                console.print("[bold yellow]--- Latest Response ---[/bold yellow]")
+                # Print the assistant's response character by character
+                content = message["content"]
+                for char in content:
+                    console.print(char, end="", style="green")
+                    time.sleep(0.01)
+                console.print()
+                console.print("[bold yellow]-------------------[/bold yellow]")
     
-    # If animating, print the last message with typing effect
-    if animate_last and messages:
-        last_message = messages[-1]
-        role = "You" if last_message["role"] == "user" else "Assistant"
-        print(f"\n{role}:")
-        if role == "Assistant":
-            print("\n--- Latest Response ---")
-            for char in last_message["content"]:
-                print(char, end='', flush=True)
-                time.sleep(0.01)  # Adjust speed as needed
-            print("\n-------------------")
-        else:
-            print(last_message["content"])
+    console.print("\n[blue]-------------------[/blue]")
 
 def main():
     # Create the workflow
@@ -119,12 +119,12 @@ def main():
     chat_history = []
     
     clear_screen()
-    print("\n=== Welcome to the AI Research Assistant! ===")
-    print("\nCommands:")
-    print("- Type 'quit' or 'exit' to end the conversation")
-    print("- Type 'clear' to clear the chat history")
-    print("- Press Ctrl+C to exit at any time")
-    print("\nReady to chat! Ask me anything...\n")
+    console.print("\n[bold blue]=== Welcome to the AI Research Assistant! ===[/bold blue]")
+    console.print("\n[yellow]Commands:[/yellow]")
+    console.print("- Type [bold]'quit'[/bold] or [bold]'exit'[/bold] to end the conversation")
+    console.print("- Type [bold]'clear'[/bold] to clear the chat history")
+    console.print("- Press [bold]Ctrl+C[/bold] to exit at any time")
+    console.print("\n[green]Ready to chat! Ask me anything...[/green]\n")
     
     while True:
         try:
@@ -133,7 +133,7 @@ def main():
             
             # Check for exit commands
             if user_input.lower() in ['quit', 'exit']:
-                print("\nThank you for chatting! Goodbye!")
+                console.print("\n[yellow]Thank you for chatting! Goodbye![/yellow]")
                 break
             
             # Check for clear command
@@ -145,8 +145,6 @@ def main():
             # Skip empty inputs
             if not user_input:
                 continue
-            
-            print("\nProcessing your request...")
             
             # Create initial state with chat history and new message
             initial_state = AgentState(
@@ -164,15 +162,14 @@ def main():
             # Update chat history and display
             if result and "messages" in result:
                 chat_history = result["messages"]
-                # Show full history with animation for the last message
-                print_chat_history(chat_history, animate_last=True)
+                print_chat_history(chat_history)
             
         except KeyboardInterrupt:
-            print("\n\nGracefully shutting down...")
+            console.print("\n\n[yellow]Gracefully shutting down...[/yellow]")
             break
         except Exception as e:
-            print(f"\nAn error occurred: {e}")
-            print("Please try again.")
+            console.print(f"\n[red]An error occurred: {e}[/red]")
+            console.print("Please try again.")
 
 if __name__ == "__main__":
     main() 
